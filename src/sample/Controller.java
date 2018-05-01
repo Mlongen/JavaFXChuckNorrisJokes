@@ -1,25 +1,16 @@
 package sample;
 
 import com.jfoenix.controls.JFXButton;
-import com.jfoenix.controls.JFXProgressBar;
-import com.jfoenix.controls.JFXTextField;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.JsonNode;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import javafx.animation.PauseTransition;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.AnchorPane;
-import org.json.JSONException;
-import org.json.JSONObject;
+import javafx.util.Duration;
 
-import javax.swing.text.html.ImageView;
 import java.net.URL;
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -44,7 +35,8 @@ public class Controller implements Initializable {
     @FXML
     private Label jokeText;
 
-
+    @FXML
+    private ProgressBar progressBar;
 
 
     private Joke currentJoke;
@@ -55,6 +47,7 @@ public class Controller implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        progressBar.setVisible(false);
         isDisplayedJokeSaved = false;
         Database db = new Database();
         Connection conn = connect();
@@ -66,11 +59,19 @@ public class Controller implements Initializable {
         currentJoke = jokeObject;
 
         getNewJoke.setOnAction((e -> {
-            Joke newJokeObject = Database.getNewJoke();
-            String newJoke = newJokeObject.getValue();
-            jokeText.setText(newJoke);
-            currentJoke = newJokeObject;
-            isDisplayedJokeSaved = false;
+            progressBar.setVisible(true);
+            PauseTransition pt = new PauseTransition();
+            pt.setDuration(Duration.seconds(1));
+            pt.setOnFinished((ev -> {
+                Joke newJokeObject = Database.getNewJoke();
+                String newJoke = newJokeObject.getValue();
+                jokeText.setText(newJoke);
+                currentJoke = newJokeObject;
+                isDisplayedJokeSaved = false;
+                progressBar.setVisible(false);
+            }));
+            pt.play();
+
         }));
 
         saveJoke.setOnAction((e -> {
@@ -83,8 +84,11 @@ public class Controller implements Initializable {
                 alert.setContentText("Joke successfully saved into database.");
                 Optional<ButtonType> result = alert.showAndWait();
                 jokeList.add(currentJoke);
+                isDisplayedJokeSaved = true;
+
+
             }
-            if (isDisplayedJokeSaved) {
+            else if (isDisplayedJokeSaved) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setHeaderText(null);
                 alert.setContentText("This joke has already been saved.");
